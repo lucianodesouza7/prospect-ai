@@ -9,6 +9,7 @@ import re
 import json
 import os
 from datetime import datetime
+import streamlit.components.v1 as components
 
 # ── Configuração da página ──
 st.set_page_config(
@@ -29,9 +30,25 @@ st.markdown("""
 *, *::before, *::after { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
+.stApp {
+    background-color: #0b0f19;
+    background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-blend-mode: overlay;
+}
+
 .main .block-container {
     padding: 1.5rem 2rem 3rem;
     max-width: 1280px;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    margin-top: 2rem;
+    box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
 /* Esconder o header padrão do Streamlit */
@@ -592,6 +609,56 @@ if "busca_realizada" not in st.session_state:
     st.session_state.busca_realizada = False
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
+
+# ── Efeito de Mouse Trail (Partículas) ──
+components.html("""
+<script>
+    const doc = window.parent.document;
+    if (!doc.getElementById('mouse-trail-script')) {
+        const scriptMarker = doc.createElement('div');
+        scriptMarker.id = 'mouse-trail-script';
+        doc.head.appendChild(scriptMarker);
+
+        const style = doc.createElement('style');
+        style.innerHTML = `
+            .mouse-particle {
+                position: fixed;
+                width: 8px;
+                height: 8px;
+                background: radial-gradient(circle, #06B6D4 0%, #6C63FF 100%);
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 999999;
+                opacity: 0.8;
+                box-shadow: 0 0 10px #6C63FF, 0 0 15px #06B6D4;
+                transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.6s ease-out;
+            }
+        `;
+        doc.head.appendChild(style);
+
+        doc.addEventListener('mousemove', function(e) {
+            // Evitar criar muitas partículas ao mesmo tempo
+            if (Math.random() > 0.6) return;
+
+            const particle = doc.createElement('div');
+            particle.className = 'mouse-particle';
+            particle.style.left = (e.clientX - 4) + 'px';
+            particle.style.top = (e.clientY - 4) + 'px';
+            particle.style.transform = 'scale(1)';
+            doc.body.appendChild(particle);
+
+            particle.getBoundingClientRect(); // Trigger reflow
+
+            particle.style.transform = `translate(${Math.random() * 30 - 15}px, ${Math.random() * 30 - 15}px) scale(0)`;
+            particle.style.opacity = '0';
+
+            setTimeout(() => {
+                particle.remove();
+            }, 600);
+        });
+    }
+</script>
+""", height=0, width=0)
 
 # ── Autenticação (Gate) ──
 CHAVE_ACESSO = "CLIENTE2024"
