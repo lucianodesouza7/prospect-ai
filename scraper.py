@@ -209,10 +209,16 @@ def buscar_empresas(
                 elif info_geral:
                     nome = info_geral.split('\n')[0]
                     
-                # Extrair Telefone via Regex no texto do card (Padrões do Brasil)
-                tel_match = re.search(r'(\(?\d{2}\)?\s?\d{4,5}-?\d{4})', info_geral)
+                # Extrair Telefone via Regex (Padrões do Brasil, com ou sem DDD, com ou sem espaço)
+                tel_match = re.search(r'(\+?55\s?)?(\(?\d{2}\)?\s?)?(9\s?)?\d{4,5}-?\s?\d{4}', info_geral)
                 if tel_match:
-                    telefone = tel_match.group(0)
+                    telefone = tel_match.group(0).strip()
+                elif aria_label:
+                    # Tenta achar nas partes divididas do aria-label
+                    for p in parts:
+                        if re.search(r'\d{4,5}-?\s?\d{4}', p) and p != nome:
+                            telefone = p.strip()
+                            break
                     
                 # Extrair Avaliação
                 rate_match = re.search(r'(\d[,.]\d)\s*\(\d+\)', info_geral)
