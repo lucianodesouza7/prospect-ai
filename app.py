@@ -9,6 +9,7 @@ import re
 import json
 import os
 from datetime import datetime
+import hashlib
 import streamlit.components.v1 as components
 
 # ── Configuração da página ──
@@ -613,44 +614,76 @@ if "autenticado" not in st.session_state:
 st.markdown("""<img src onerror="const doc=window.document;if(!doc.getElementById('mouse-trail-style')){const style=doc.createElement('style');style.id='mouse-trail-style';style.innerHTML='.mouse-particle{position:fixed;width:10px;height:10px;background:radial-gradient(circle,#06B6D4 0%,#6C63FF 100%);border-radius:50%;pointer-events:none;z-index:999999;opacity:0.9;box-shadow:0 0 10px #6C63FF,0 0 20px #06B6D4;transition:transform 0.6s cubic-bezier(0.1,0.8,0.3,1),opacity 0.6s ease-out;}';doc.head.appendChild(style);doc.addEventListener('mousemove',function(e){if(Math.random()>0.4)return;const p=doc.createElement('div');p.className='mouse-particle';p.style.left=(e.clientX-5)+'px';p.style.top=(e.clientY-5)+'px';p.style.transform='scale(1)';doc.body.appendChild(p);p.getBoundingClientRect();p.style.transform='translate('+(Math.random()*40-20)+'px,'+(Math.random()*40-20)+'px) scale(0)';p.style.opacity='0';setTimeout(()=>{p.remove();},600);});}" style="display:none;">""", unsafe_allow_html=True)
 
 # ── Autenticação (Gate) ──
-# Tenta carregar senhas ocultas da nuvem (Streamlit Secrets)
+# Tenta carregar senhas ocultas da nuvem (Streamlit Secrets) (Compatibilidade legada)
 try:
     chaves_validas = st.secrets["chaves_clientes"]
 except Exception:
-    # Se não houver segredos configurados, usa esta lista padrão:
-    chaves_validas = [
-        "CLIENTE2024",
-        "VIP2025",
-        "TESTE123",
-        "JOAO_ACADEMIA"
-    ]
+    chaves_validas = ["CLIENTE2024", "VIP2025", "TESTE123", "JOAO_ACADEMIA"]
+
+def hash_senha(senha):
+    return hashlib.sha256(senha.encode()).hexdigest()
+
+def carregar_usuarios():
+    if os.path.exists("usuarios.json"):
+        with open("usuarios.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def salvar_usuarios(usuarios):
+    with open("usuarios.json", "w", encoding="utf-8") as f:
+        json.dump(usuarios, f)
 
 if not st.session_state.autenticado:
     _, col2, _ = st.columns([1, 1.5, 1])
     
     with col2:
         st.markdown("""
-        <div style="text-align: center; margin-top: 10vh; padding: 2rem; background: rgba(22, 27, 45, 0.8); backdrop-filter: blur(24px); border-radius: 28px; border: 1px solid rgba(108, 99, 255, 0.15); box-shadow: 0 25px 80px rgba(0,0,0,0.3);">
+        <div style="text-align: center; margin-top: 10vh; padding: 2rem 2rem 0; background: rgba(22, 27, 45, 0.8); backdrop-filter: blur(24px); border-radius: 28px 28px 0 0; border: 1px solid rgba(108, 99, 255, 0.15); border-bottom: none;">
             <div style="font-size: 3.5rem; margin-bottom: 1rem;">🚀</div>
             <h1 style="font-size: 1.8rem; font-weight: 800; color: #F1F5F9; margin-bottom: 0.5rem;">ProspectAI</h1>
-            <p style="color: #64748B; margin-bottom: 2rem; font-size: 0.9rem;">Área restrita. Informe sua chave de acesso para utilizar a ferramenta de prospecção.</p>
+            <p style="color: #64748B; margin-bottom: 1rem; font-size: 0.9rem;">Área restrita. Faça login ou crie sua conta.</p>
+        </div>
         """, unsafe_allow_html=True)
         
-        chave = st.text_input("Chave de Acesso", type="password", placeholder="Sua chave secreta", label_visibility="collapsed")
-        
-        if st.button("Acessar Sistema", use_container_width=True, type="primary"):
-            if chave in chaves_validas:
-                st.session_state.autenticado = True
-                st.rerun()
-            else:
-                st.error("❌ Chave de acesso inválida!")
-                
+        container_tabs = st.container()
+        with container_tabs:
+            tab_login, tab_cadastro = st.tabs(["🔐 Entrar", "📝 Criar Conta"])
+            usuarios = carregar_usuarios()
+            
+            with tab_login:
+                login_user = st.text_input("Usuário", key="login_user")
+                login_senha = st.text_input("Senha", type="password", key="login_senha")
+                if st.button("Entrar", use_container_width=True, type="primary"):
+                    if login_user in usuarios and usuarios[login_user] == hash_senha(login_senha):
+                        st.session_state.autenticado = True
+                        st.rerun()
+                    elif login_senha in chaves_validas: # Compatibilidade com senhas antigas
+                        st.session_state.autenticado = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Usuário ou senha incorretos!")
+                        
+            with tab_cadastro:
+                cad_user = st.text_input("Novo Usuário", key="cad_user")
+                cad_senha = st.text_input("Nova Senha", type="password", key="cad_senha")
+                cad_conf = st.text_input("Confirmar Senha", type="password", key="cad_conf")
+                if st.button("Cadastrar e Entrar", use_container_width=True):
+                    if not cad_user or not cad_senha:
+                        st.warning("Preencha todos os campos.")
+                    elif cad_senha != cad_conf:
+                        st.error("❌ As senhas não coincidem.")
+                    elif cad_user in usuarios:
+                        st.error("❌ Este usuário já existe.")
+                    else:
+                        usuarios[cad_user] = hash_senha(cad_senha)
+                        salvar_usuarios(usuarios)
+                        st.success("✅ Conta criada com sucesso!")
+                        st.session_state.autenticado = True
+                        st.rerun()
+                        
         st.markdown("""
-            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: #475569;">
-                Não tem uma chave? <a href="#" style="color: #6C63FF; font-weight: 600; text-decoration: none;">Fale conosco</a>
-                <br>
-                <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2); padding: 6px 16px; border-radius: 50px; font-size: 0.72rem; font-weight: 600; color: #a78bfa; margin-top: 1rem;">💎 Plano Pro</div>
-            </div>
+        <div style="text-align: center; padding: 0 2rem 2rem; background: rgba(22, 27, 45, 0.8); backdrop-filter: blur(24px); border-radius: 0 0 28px 28px; border: 1px solid rgba(108, 99, 255, 0.15); border-top: none; box-shadow: 0 25px 80px rgba(0,0,0,0.3);">
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2); padding: 6px 16px; border-radius: 50px; font-size: 0.72rem; font-weight: 600; color: #a78bfa; margin-top: 1rem;">💎 Plano Pro</div>
         </div>
         """, unsafe_allow_html=True)
         
