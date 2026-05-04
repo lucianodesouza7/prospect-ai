@@ -609,6 +609,16 @@ if "busca_realizada" not in st.session_state:
     st.session_state.busca_realizada = False
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
+if "localizacao_mapa" not in st.session_state:
+    st.session_state.localizacao_mapa = ""
+
+if st.session_state.get("localizacao_mapa"):
+    map_query = urllib.parse.quote(st.session_state.localizacao_mapa)
+    st.markdown(f"""
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.3; mix-blend-mode: luminosity;">
+        <iframe width="100%" height="100%" src="https://maps.google.com/maps?q={map_query}&t=k&z=13&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ── Efeito de Mouse Trail (Partículas) ──
 st.markdown("""<img src onerror="const doc=window.document;if(!doc.getElementById('mouse-trail-style')){const style=doc.createElement('style');style.id='mouse-trail-style';style.innerHTML='.mouse-particle{position:fixed;width:10px;height:10px;background:radial-gradient(circle,#06B6D4 0%,#6C63FF 100%);border-radius:50%;pointer-events:none;z-index:999999;opacity:0.9;box-shadow:0 0 10px #6C63FF,0 0 20px #06B6D4;transition:transform 0.6s cubic-bezier(0.1,0.8,0.3,1),opacity 0.6s ease-out;}';doc.head.appendChild(style);doc.addEventListener('mousemove',function(e){if(Math.random()>0.4)return;const p=doc.createElement('div');p.className='mouse-particle';p.style.left=(e.clientX-5)+'px';p.style.top=(e.clientY-5)+'px';p.style.transform='scale(1)';doc.body.appendChild(p);p.getBoundingClientRect();p.style.transform='translate('+(Math.random()*40-20)+'px,'+(Math.random()*40-20)+'px) scale(0)';p.style.opacity='0';setTimeout(()=>{p.remove();},600);});}" style="display:none;">""", unsafe_allow_html=True)
@@ -705,9 +715,9 @@ with st.sidebar:
     st.markdown('<div class="sidebar-brand"><div class="logo">🚀</div><div class="name">ProspectAI</div><div class="tagline">Geração de Leads Inteligente</div></div>', unsafe_allow_html=True)
     st.markdown("---")
     
-    with st.expander("⚙️ Configurações Avançadas (n8n)"):
+    with st.popover("⚙️ Config. Avançadas (n8n)", use_container_width=True):
         webhook_url = st.text_input("Webhook URL (n8n)", value="", placeholder="https://seu-n8n.com/webhook/...")
-        st.caption("Insira a URL do webhook do n8n para realizar as buscas via API externa em vez de scraping local.")
+        st.caption("URL do webhook do n8n para realizar buscas em nuvem.")
 
     st.markdown("---")
 
@@ -788,6 +798,7 @@ if buscar and segmento and localizacao:
                 st.session_state.resultados = resultados
                 st.session_state.busca_realizada = True
                 st.session_state.segmento_atual = segmento
+                st.session_state.localizacao_mapa = localizacao
                 salvar_dados(resultados)
                 st.success(f"✅ {len(resultados)} empresas encontradas!")
             else:
