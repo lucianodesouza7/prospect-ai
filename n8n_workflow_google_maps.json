@@ -1,0 +1,211 @@
+{
+  "name": "Busca ProspectAI",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prospeccao-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook do App",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "webhookId": "prospeccao-id-unico-123"
+    },
+    {
+      "parameters": {
+        "url": "https://api.apify.com/v2/acts/compass~google-maps-scraper/run-sync-get-dataset-items?token=SEU_TOKEN_AQUI",
+        "method": "POST",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "searchStringsArray",
+              "value": "={{ $json.body.segmento }} em {{ $json.body.localizacao }}"
+            },
+            {
+              "name": "maxCrawledPlaces",
+              "value": "={{ $json.body.max_resultados }}"
+            },
+            {
+              "name": "language",
+              "value": "pt-BR"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2",
+      "name": "Buscar no Google Maps (Apify)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        450,
+        300
+      ],
+      "notes": "Requer conta no Apify.com (Grátis)"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "Nome",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "Telefone",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "Endereço",
+              "value": "={{ $json.address }}"
+            },
+            {
+              "name": "Site",
+              "value": "={{ $json.website }}"
+            },
+            {
+              "name": "Avaliação",
+              "value": "={{ $json.totalScore }}"
+            },
+            {
+              "name": "E-mail",
+              "value": "—"
+            },
+            {
+              "name": "Status",
+              "value": "🆕 Novo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3",
+      "name": "Formatar para o App",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "aggregateItems",
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "Nome"
+            },
+            {
+              "fieldToAggregate": "Telefone"
+            },
+            {
+              "fieldToAggregate": "Endereço"
+            },
+            {
+              "fieldToAggregate": "Site"
+            },
+            {
+              "fieldToAggregate": "Avaliação"
+            },
+            {
+              "fieldToAggregate": "E-mail"
+            },
+            {
+              "fieldToAggregate": "Status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4",
+      "name": "Juntar Lista",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "data",
+              "value": "={{ $json.data }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5",
+      "name": "Resposta Final",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.2,
+      "position": [
+        1050,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook do App": {
+      "main": [
+        [
+          {
+            "node": "Buscar no Google Maps (Apify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar no Google Maps (Apify)": {
+      "main": [
+        [
+          {
+            "node": "Formatar para o App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar para o App": {
+      "main": [
+        [
+          {
+            "node": "Juntar Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Juntar Lista": {
+      "main": [
+        [
+          {
+            "node": "Resposta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
