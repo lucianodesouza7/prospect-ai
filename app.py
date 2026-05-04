@@ -49,6 +49,8 @@ html { scroll-behavior: smooth; }
     margin-top: 2rem;
     box-shadow: 0 10px 50px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 10;
 }
 
 /* Esconder o header padrão do Streamlit */
@@ -615,8 +617,8 @@ if "localizacao_mapa" not in st.session_state:
 if st.session_state.get("localizacao_mapa"):
     map_query = urllib.parse.quote(st.session_state.localizacao_mapa)
     st.markdown(f"""
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.3; mix-blend-mode: luminosity;">
-        <iframe width="100%" height="100%" src="https://maps.google.com/maps?q={map_query}&t=k&z=13&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0.4;">
+        <iframe width="100%" height="100%" src="https://maps.google.com/maps?q={map_query}&t=m&z=13&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
     </div>
     """, unsafe_allow_html=True)
 
@@ -715,8 +717,8 @@ with st.sidebar:
     st.markdown('<div class="sidebar-brand"><div class="logo">🚀</div><div class="name">ProspectAI</div><div class="tagline">Geração de Leads Inteligente</div></div>', unsafe_allow_html=True)
     st.markdown("---")
     
-    with st.popover("⚙️ Config. Avançadas (n8n)", use_container_width=True):
-        webhook_url = st.text_input("Webhook URL (n8n)", value="", placeholder="https://seu-n8n.com/webhook/...")
+    with st.popover("⚙️ n8n Webhook", use_container_width=True):
+        webhook_url = st.text_input("Webhook URL", value="", placeholder="https://seu-n8n.com/webhook/...")
         st.caption("URL do webhook do n8n para realizar buscas em nuvem.")
 
     st.markdown("---")
