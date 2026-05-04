@@ -610,50 +610,7 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
 # ── Efeito de Mouse Trail (Partículas) ──
-st.markdown("""
-<img src onerror="
-    const doc = window.document;
-    if (!doc.getElementById('mouse-trail-style')) {
-        const style = doc.createElement('style');
-        style.id = 'mouse-trail-style';
-        style.innerHTML = `
-            .mouse-particle {
-                position: fixed;
-                width: 10px;
-                height: 10px;
-                background: radial-gradient(circle, #06B6D4 0%, #6C63FF 100%);
-                border-radius: 50%;
-                pointer-events: none;
-                z-index: 999999;
-                opacity: 0.9;
-                box-shadow: 0 0 10px #6C63FF, 0 0 20px #06B6D4;
-                transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.6s ease-out;
-            }
-        `;
-        doc.head.appendChild(style);
-
-        doc.addEventListener('mousemove', function(e) {
-            if (Math.random() > 0.4) return; // Menos partículas para melhor performance
-
-            const particle = doc.createElement('div');
-            particle.className = 'mouse-particle';
-            particle.style.left = (e.clientX - 5) + 'px';
-            particle.style.top = (e.clientY - 5) + 'px';
-            particle.style.transform = 'scale(1)';
-            doc.body.appendChild(particle);
-
-            particle.getBoundingClientRect(); // Trigger reflow
-
-            particle.style.transform = `translate(${Math.random() * 40 - 20}px, ${Math.random() * 40 - 20}px) scale(0)`;
-            particle.style.opacity = '0';
-
-            setTimeout(() => {
-                particle.remove();
-            }, 600);
-        });
-    }
-" style="display:none;">
-""", unsafe_allow_html=True)
+st.markdown("""<img src onerror="const doc=window.document;if(!doc.getElementById('mouse-trail-style')){const style=doc.createElement('style');style.id='mouse-trail-style';style.innerHTML='.mouse-particle{position:fixed;width:10px;height:10px;background:radial-gradient(circle,#06B6D4 0%,#6C63FF 100%);border-radius:50%;pointer-events:none;z-index:999999;opacity:0.9;box-shadow:0 0 10px #6C63FF,0 0 20px #06B6D4;transition:transform 0.6s cubic-bezier(0.1,0.8,0.3,1),opacity 0.6s ease-out;}';doc.head.appendChild(style);doc.addEventListener('mousemove',function(e){if(Math.random()>0.4)return;const p=doc.createElement('div');p.className='mouse-particle';p.style.left=(e.clientX-5)+'px';p.style.top=(e.clientY-5)+'px';p.style.transform='scale(1)';doc.body.appendChild(p);p.getBoundingClientRect();p.style.transform='translate('+(Math.random()*40-20)+'px,'+(Math.random()*40-20)+'px) scale(0)';p.style.opacity='0';setTimeout(()=>{p.remove();},600);});}" style="display:none;">""", unsafe_allow_html=True)
 
 # ── Autenticação (Gate) ──
 CHAVE_ACESSO = "CLIENTE2024"
