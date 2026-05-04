@@ -880,6 +880,11 @@ if dados:
                     if link_wpp else '<span style="color:#555;font-size:0.8rem;">Sem telefone</span>'
                 )
 
+                # Gerar iframe do mapa individual
+                map_target = end if end not in ('—', '', 'N/A') else f"{nome} {st.session_state.get('localizacao_mapa', '')}"
+                map_query_enc = urllib.parse.quote(map_target)
+                map_iframe = f'<iframe width="100%" height="180" style="border:0; border-radius: 12px; margin: 15px 0; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2);" loading="lazy" allowfullscreen src="https://maps.google.com/maps?q={map_query_enc}&t=m&z=15&output=embed"></iframe>'
+
                 st.markdown(f"""
                 <div class="result-card">
                     <div class="card-header">
@@ -891,6 +896,7 @@ if dados:
                     <div class="card-detail"><span class="icon">📍</span> {end}</div>
                     <div class="card-detail"><span class="icon">📧</span> {email}</div>
                     <div class="card-detail card-rating"><span class="icon">⭐</span> {rating}</div>
+                    {map_iframe}
                     <div class="card-actions">
                         {wpp_html}
                         {f'<a href="{"https://" + site if not site.startswith("http") else site}" target="_blank" class="site-btn">🌐 Site</a>' if site not in ('—', '', 'N/A') else ''}
