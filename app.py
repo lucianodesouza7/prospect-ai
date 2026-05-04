@@ -613,7 +613,17 @@ if "autenticado" not in st.session_state:
 st.markdown("""<img src onerror="const doc=window.document;if(!doc.getElementById('mouse-trail-style')){const style=doc.createElement('style');style.id='mouse-trail-style';style.innerHTML='.mouse-particle{position:fixed;width:10px;height:10px;background:radial-gradient(circle,#06B6D4 0%,#6C63FF 100%);border-radius:50%;pointer-events:none;z-index:999999;opacity:0.9;box-shadow:0 0 10px #6C63FF,0 0 20px #06B6D4;transition:transform 0.6s cubic-bezier(0.1,0.8,0.3,1),opacity 0.6s ease-out;}';doc.head.appendChild(style);doc.addEventListener('mousemove',function(e){if(Math.random()>0.4)return;const p=doc.createElement('div');p.className='mouse-particle';p.style.left=(e.clientX-5)+'px';p.style.top=(e.clientY-5)+'px';p.style.transform='scale(1)';doc.body.appendChild(p);p.getBoundingClientRect();p.style.transform='translate('+(Math.random()*40-20)+'px,'+(Math.random()*40-20)+'px) scale(0)';p.style.opacity='0';setTimeout(()=>{p.remove();},600);});}" style="display:none;">""", unsafe_allow_html=True)
 
 # ── Autenticação (Gate) ──
-CHAVE_ACESSO = "CLIENTE2024"
+# Tenta carregar senhas ocultas da nuvem (Streamlit Secrets)
+try:
+    chaves_validas = st.secrets["chaves_clientes"]
+except Exception:
+    # Se não houver segredos configurados, usa esta lista padrão:
+    chaves_validas = [
+        "CLIENTE2024",
+        "VIP2025",
+        "TESTE123",
+        "JOAO_ACADEMIA"
+    ]
 
 if not st.session_state.autenticado:
     _, col2, _ = st.columns([1, 1.5, 1])
@@ -629,7 +639,7 @@ if not st.session_state.autenticado:
         chave = st.text_input("Chave de Acesso", type="password", placeholder="Sua chave secreta", label_visibility="collapsed")
         
         if st.button("Acessar Sistema", use_container_width=True, type="primary"):
-            if chave == CHAVE_ACESSO:
+            if chave in chaves_validas:
                 st.session_state.autenticado = True
                 st.rerun()
             else:
