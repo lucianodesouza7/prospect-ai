@@ -169,142 +169,106 @@ def buscar_empresas(
         _scroll_painel_resultados(driver, scroll_count=scroll_rounds)
         time.sleep(2)
 
-        # Coletar links de cada resultado
+        # Extração Rápida: ler diretamente da lista sem abrir as páginas
+        # Busca os containers que possuem os dados da empresa na barra lateral
+        # O Google muda muito as classes, então buscamos todos os links de locais e olhamos o texto ao redor
         links = driver.find_elements(By.CSS_SELECTOR, 'a[href*="/maps/place/"]')
-        # Filtrar links duplicados
-        urls_unicas = []
-        seen = set()
+        
+        empresas_unicas = {}
+        
         for link in links:
+            if len(empresas_unicas) >= max_resultados:
+                break
+                
             try:
-                href = link.get_attribute("href")
-                if href and href not in seen:
-                    seen.add(href)
-                    urls_unicas.append(href)
-            except StaleElementReferenceException:
-                continue
-
-        urls_unicas = urls_unicas[:max_resultados]
-        total = len(urls_unicas)
-
-        for idx, url in enumerate(urls_unicas):
-            try:
-                driver.get(url)
-                time.sleep(2.5)  # Pausa para evitar bloqueio
-
-                # Extrair nome
-                nome = ""
+                url = link.get_attribute("href")
+                if not url or url in empresas_unicas:
+                    continue
+                    
+                # O 'aria-label' do link geralmente contém: "Nome · Avaliação · Tipo · Endereço · Telefone · Horários"
+                aria_label = link.get_attribute("aria-label") or ""
+                
+                # Tentar pegar o texto visível do card inteiro (voltando 2 níveis no HTML)
                 try:
-                    el_nome = WebDriverWait(driver, 8).until(
-                        EC.presence_of_element_located(
-                            (By.CSS_SELECTOR, "h1.DUwDvf, h1.fontHeadlineLarge")
-                        )
-                    )
-                    nome = el_nome.text.strip()
-                except TimeoutException:
-                    try:
-                        el_nome = driver.find_element(By.CSS_SELECTOR, "h1")
-                        nome = el_nome.text.strip()
-                    except NoSuchElementException:
-                        nome = "Sem nome"
+                    card_element = link.find_element(By.XPATH, "../..")
+                    info_geral = card_element.text
+                except Exception:
+                    info_geral = aria_label
+                
+                nome = "Sem nome"
+                telefone = "—"
+                endereco = "—"
+                avaliacao = "—"
+                site = "—"
+                
+                # Extrair Nome
+                if aria_label:
+                    parts = [p.strip() for p in aria_label.split('·')]
+                    if parts:
+                        nome = parts[0]
+                elif info_geral:
+                    nome = info_geral.split('\n')[0]
+                    
+                # Extrair Telefone via Regex no texto do card (Padrões do Brasil)
+                tel_match = re.search(r'(\(?\d{2}\)?\s?\d{4,5}-?\d{4})', info_geral)
+                if tel_match:
+                    telefone = tel_match.group(0)
+                    
+                # Extrair Avaliação
+                rate_match = re.search(r'(\d[,.]\d)\s*\(\d+\)', info_geral)
+                if rate_match:
+                    avaliacao = rate_match.group(1).replace('.', ',')
+                elif aria_label and 'estrelas' in aria_label:
+                    for p in parts:
+                        if 'estrelas' in p:
+                            avaliacao = p.split('estrelas')[0].strip()
+                            
+                # Tentar adivinhar o endereço (normalmente a linha após a avaliação ou segmento)
+                linhas = [l for l in info_geral.split('\n') if l.strip()]
+                for l in linhas:
+                    if ('Av.' in l or 'R.' in l or 'Rua' in l or '-' in l) and l != nome and not re.search(r'\d{4,5}-?\d{4}', l):
+                        if len(l) > 10: # Evitar falsos positivos curtos
+                            endereco = l
+                            break
 
-                # Extrair informações do painel de detalhes
-                telefone = ""
-                endereco = ""
-                site = ""
-                avaliacao = ""
-
-                # Telefone
-                try:
-                    el_phone = driver.find_element(
-                        By.CSS_SELECTOR,
-                        'button[data-item-id*="phone"] div.fontBodyMedium, '
-                        'a[data-item-id*="phone"] div.fontBodyMedium',
-                    )
-                    telefone = el_phone.text.strip()
-                except NoSuchElementException:
-                    # Fallback: buscar pelo ícone de telefone
-                    try:
-                        elementos = driver.find_elements(
-                            By.CSS_SELECTOR, 'button[data-tooltip="Copiar o número de telefone"]'
-                        )
-                        if elementos:
-                            telefone = elementos[0].get_attribute("aria-label") or ""
-                            telefone = telefone.replace("Telefone:", "").strip()
-                    except Exception:
-                        pass
-
-                # Endereço
-                try:
-                    el_addr = driver.find_element(
-                        By.CSS_SELECTOR,
-                        'button[data-item-id="address"] div.fontBodyMedium, '
-                        'button[data-item-id="address"] div.Io6YTe',
-                    )
-                    endereco = el_addr.text.strip()
-                except NoSuchElementException:
-                    try:
-                        elementos = driver.find_elements(
-                            By.CSS_SELECTOR, 'button[data-tooltip="Copiar endereço"]'
-                        )
-                        if elementos:
-                            endereco = elementos[0].get_attribute("aria-label") or ""
-                            endereco = endereco.replace("Endereço:", "").strip()
-                    except Exception:
-                        pass
-
-                # Site
-                try:
-                    el_site = driver.find_element(
-                        By.CSS_SELECTOR,
-                        'a[data-item-id="authority"] div.fontBodyMedium, '
-                        'a[data-item-id="authority"] div.Io6YTe',
-                    )
-                    site = el_site.text.strip()
-                except NoSuchElementException:
-                    try:
-                        el_link = driver.find_element(
-                            By.CSS_SELECTOR, 'a[data-item-id="authority"]'
-                        )
-                        site = el_link.get_attribute("href") or ""
-                    except NoSuchElementException:
-                        pass
-
-                # Avaliação
-                try:
-                    el_rating = driver.find_element(
-                        By.CSS_SELECTOR, "div.F7nice span[aria-hidden='true']"
-                    )
-                    avaliacao = el_rating.text.strip()
-                except NoSuchElementException:
-                    pass
-
-                # E-mail (opcional – visita o site)
+                # Opcional: Se buscar_emails estiver ativo, aí sim entramos no link individualmente (Lento)
                 email = ""
-                if buscar_emails and site:
-                    site_url = site if site.startswith("http") else f"https://{site}"
-                    email = _extrair_email_do_site(driver, site_url)
+                if buscar_emails:
+                    # Salva a janela principal
+                    janela_principal = driver.current_window_handle
+                    driver.switch_to.new_window('tab')
+                    driver.get(url)
+                    time.sleep(2)
+                    try:
+                        # Tenta pegar o site na página dedicada
+                        el_link = driver.find_element(By.CSS_SELECTOR, 'a[data-item-id="authority"]')
+                        site = el_link.get_attribute("href") or ""
+                        if site:
+                            email = _extrair_email_do_site(driver, site)
+                    except Exception:
+                        pass
+                    driver.close()
+                    driver.switch_to.window(janela_principal)
 
                 empresa = {
-                    "Nome": nome if nome else "Sem nome",
-                    "Telefone": telefone if telefone else "—",
-                    "Endereço": endereco if endereco else "—",
-                    "Site": site if site else "—",
-                    "Avaliação": avaliacao if avaliacao else "—",
+                    "Nome": nome,
+                    "Telefone": telefone,
+                    "Endereço": endereco,
+                    "Site": site,
+                    "Avaliação": avaliacao,
                     "E-mail": email if email else "—",
                     "Status": "🆕 Novo",
                 }
-
-                dados.append(empresa)
-
+                
+                empresas_unicas[url] = empresa
+                
                 if progress_callback:
-                    progress_callback(idx + 1, total)
-
-            except (TimeoutException, WebDriverException) as e:
-                # Pular este resultado e continuar
+                    progress_callback(len(empresas_unicas), max_resultados)
+                    
+            except Exception as e:
                 continue
 
-            # Pausa entre requisições para evitar bloqueio
-            time.sleep(1)
+        dados = list(empresas_unicas.values())
 
     except WebDriverException as e:
         raise RuntimeError(
