@@ -32,11 +32,10 @@ html { scroll-behavior: smooth; }
 
 .stApp {
     background-color: #0b0f19;
-    background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop');
+    background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    background-blend-mode: overlay;
 }
 
 .main .block-container {
@@ -611,45 +610,41 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
 # ── Efeito de Mouse Trail (Partículas) ──
-components.html("""
-<script>
-    const doc = window.parent.document;
-    if (!doc.getElementById('mouse-trail-script')) {
-        const scriptMarker = doc.createElement('div');
-        scriptMarker.id = 'mouse-trail-script';
-        doc.head.appendChild(scriptMarker);
-
+st.markdown("""
+<img src onerror="
+    const doc = window.document;
+    if (!doc.getElementById('mouse-trail-style')) {
         const style = doc.createElement('style');
+        style.id = 'mouse-trail-style';
         style.innerHTML = `
             .mouse-particle {
                 position: fixed;
-                width: 8px;
-                height: 8px;
+                width: 10px;
+                height: 10px;
                 background: radial-gradient(circle, #06B6D4 0%, #6C63FF 100%);
                 border-radius: 50%;
                 pointer-events: none;
                 z-index: 999999;
-                opacity: 0.8;
-                box-shadow: 0 0 10px #6C63FF, 0 0 15px #06B6D4;
+                opacity: 0.9;
+                box-shadow: 0 0 10px #6C63FF, 0 0 20px #06B6D4;
                 transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.6s ease-out;
             }
         `;
         doc.head.appendChild(style);
 
         doc.addEventListener('mousemove', function(e) {
-            // Evitar criar muitas partículas ao mesmo tempo
-            if (Math.random() > 0.6) return;
+            if (Math.random() > 0.4) return; // Menos partículas para melhor performance
 
             const particle = doc.createElement('div');
             particle.className = 'mouse-particle';
-            particle.style.left = (e.clientX - 4) + 'px';
-            particle.style.top = (e.clientY - 4) + 'px';
+            particle.style.left = (e.clientX - 5) + 'px';
+            particle.style.top = (e.clientY - 5) + 'px';
             particle.style.transform = 'scale(1)';
             doc.body.appendChild(particle);
 
             particle.getBoundingClientRect(); // Trigger reflow
 
-            particle.style.transform = `translate(${Math.random() * 30 - 15}px, ${Math.random() * 30 - 15}px) scale(0)`;
+            particle.style.transform = `translate(${Math.random() * 40 - 20}px, ${Math.random() * 40 - 20}px) scale(0)`;
             particle.style.opacity = '0';
 
             setTimeout(() => {
@@ -657,8 +652,8 @@ components.html("""
             }, 600);
         });
     }
-</script>
-""", height=0, width=0)
+" style="display:none;">
+""", unsafe_allow_html=True)
 
 # ── Autenticação (Gate) ──
 CHAVE_ACESSO = "CLIENTE2024"
