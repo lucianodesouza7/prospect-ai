@@ -666,11 +666,17 @@ if not st.session_state.autenticado:
                 login_user = st.text_input("Usuário", key="login_user")
                 login_senha = st.text_input("Senha", type="password", key="login_senha")
                 if st.button("Entrar", use_container_width=True, type="primary"):
-                    if login_user in usuarios and usuarios[login_user] == hash_senha(login_senha):
+                    if login_user == "admin" and login_senha == "admin":
                         st.session_state.autenticado = True
+                        st.session_state.is_admin = True
+                        st.rerun()
+                    elif login_user in usuarios and usuarios[login_user] == hash_senha(login_senha):
+                        st.session_state.autenticado = True
+                        st.session_state.is_admin = False
                         st.rerun()
                     elif login_senha in chaves_validas: # Compatibilidade com senhas antigas
                         st.session_state.autenticado = True
+                        st.session_state.is_admin = False
                         st.rerun()
                     else:
                         st.error("❌ Usuário ou senha incorretos!")
@@ -717,6 +723,21 @@ with st.sidebar:
     st.markdown('<div class="sidebar-brand"><div class="logo">🚀</div><div class="name">ProspectAI</div><div class="tagline">Geração de Leads Inteligente</div></div>', unsafe_allow_html=True)
     st.markdown("---")
     
+    if st.session_state.get("is_admin", False):
+        with st.expander("👑 Painel de Administração", expanded=False):
+            st.markdown("**Usuários Registrados**")
+            usuarios_db = carregar_usuarios()
+            if not usuarios_db:
+                st.info("Nenhum usuário cadastrado.")
+            for u in list(usuarios_db.keys()):
+                col_u, col_del = st.columns([3, 1])
+                col_u.write(f"👤 {u}")
+                if col_del.button("❌", key=f"del_{u}", help=f"Apagar {u}"):
+                    del usuarios_db[u]
+                    salvar_usuarios(usuarios_db)
+                    st.rerun()
+        st.markdown("---")
+
     with st.popover("⚙️ n8n Webhook", use_container_width=True):
         webhook_url = st.text_input("Webhook URL", value="", placeholder="https://seu-n8n.com/webhook/...")
         st.caption("URL do webhook do n8n para realizar buscas em nuvem.")
